@@ -14,19 +14,15 @@ class BoomNowClient:
             return {"status": resp.status_code, "text": resp.text}
 
     async def search_hotels(self, city: str, adults: int):
-        token = await auth_client.get_token()
-
         headers = {
-            "Authorization": f"Bearer {token}"
+            "Accept": "application/json",
+            "Authorization": f"Bearer {settings.BOOMNOW_API_TOKEN}"
         }
 
-        params = {"city": city, "adults": adults}
-
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
-                f"{settings.BOOMNOW_BASE_URL}/open_api/v1/search",
-                params=params,
-                headers=headers,
+                f"{settings.BOOMNOW_BASE_URL}/open_api/v1/listings",
+                headers=headers
             )
             resp.raise_for_status()
             return resp.json()
