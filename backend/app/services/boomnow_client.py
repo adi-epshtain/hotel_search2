@@ -1,6 +1,5 @@
 import httpx
 from backend.app.core.config import settings
-from backend.app.services.auth_service import auth_client
 
 
 class BoomNowClient:

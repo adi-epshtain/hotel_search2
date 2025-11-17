@@ -80,3 +80,4 @@ Proxy to backend is configured in vite.config.js.
 
 API
 GET /api/search?city=<city>&adults=<n>
+![Main UI Screenshot](images/main_screen.png)
