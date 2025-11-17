@@ -37,47 +37,6 @@ curl "http://127.0.0.1:8000/api/search?city=Tel%20Aviv&adults=2"
 
 ### 🧱 Tech Stack
 - FastAPI + httpx async client
-- Vue 3 + Axios
+- Vue 3 + 
 
----
-
-### 🔍 Troubleshooting
-- 403 from BoomNow → verify client id/secret
-- 204/no data in frontend → ensure proxy to backend works (avoid hitting Vite dev server)
-- Token miss → check `.env` loaded (via `load_dotenv()` in `config.py`)
-Hotel Search Widget (FastAPI + Vue)
-
-A small demo project showing a hotel search widget built with FastAPI (Python) and Vue.js, integrating with the BoomNow Open API.
-
-Features
-
-Search by city + number of adults
-
-FastAPI backend calling BoomNow /open_api/v1/listings
-
-Vue UI displaying hotel cards (image, name, price)
-
-Setup
-Backend
-cd backend
-uvicorn backend.app.main:app --reload
-
-
-Create backend/.env:
-
-BOOMNOW_BASE_URL=https://app.boomnow.com
-BOOMNOW_API_TOKEN=<your_token>
-
-Frontend
-cd frontend
-npm install
-npm run dev
-
-
-Runs at: http://localhost:5173
-
-Proxy to backend is configured in vite.config.js.
-
-API
-GET /api/search?city=<city>&adults=<n>
 ![Main UI Screenshot](images/main_screen.png)
