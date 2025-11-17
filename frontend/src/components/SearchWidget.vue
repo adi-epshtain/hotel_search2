@@ -50,12 +50,43 @@
 
     <div v-if="loading" class="loading">Loading...</div>
 
-    <div class="results">
-      <HotelCard
-        v-for="item in results"
-        :key="item.id"
-        :hotel="item"
-      />
+    <div v-if="!loading && results.length > 0" class="results-section">
+      <div class="results">
+        <HotelCard
+          v-for="item in paginatedResults"
+          :key="item.id"
+          :hotel="item"
+        />
+      </div>
+      
+      <div v-if="totalPages > 1" class="pagination">
+        <button 
+          class="page-btn" 
+          @click="goToPage(currentPage - 1)"
+          :disabled="currentPage === 1"
+        >
+          ← Previous
+        </button>
+        <span class="page-info">
+          Page {{ currentPage }} of {{ totalPages }}
+        </span>
+        <button 
+          class="page-btn" 
+          @click="goToPage(currentPage + 1)"
+          :disabled="currentPage === totalPages"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+
+    <div v-if="!loading && results.length === 0 && hasSearched && !searchError" class="no-results">
+      No results found. Try a different search.
+    </div>
+    
+    <div v-if="searchError" class="error-message">
+      <p><strong>Error:</strong> {{ searchError }}</p>
+      <p class="error-hint">Make sure the backend server is running on http://127.0.0.1:8000</p>
     </div>
 
   </div>
@@ -75,8 +106,24 @@ export default {
       maxAdults: 20,
       loading: false,
       results: [],
-      cities: []
+      cities: [],
+      currentPage: 1,
+      itemsPerPage: 6,
+      hasSearched: false,
+      searchError: null
     };
+  },
+  
+  computed: {
+    totalPages() {
+      return Math.ceil(this.results.length / this.itemsPerPage);
+    },
+    
+    paginatedResults() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.results.slice(start, end);
+    }
   },
 
   async mounted() {
@@ -167,25 +214,154 @@ export default {
 
     async search() {
       this.loading = true;
+      this.hasSearched = true;
+      this.currentPage = 1;
+      this.searchError = null;
 
       try {
         const res = await axios.get("/api/search", {
           params: { city: this.city, adults: this.adults }
         });
 
-        this.results = res.data.map(hotel => ({
-          id: hotel.id,
-          name: hotel.title || hotel.name,
-          city: this.city,
-          price: hotel.price || 100,
-          image: hotel.images?.[0] || "https://via.placeholder.com/400x200"
-        }));
+        console.log("=== SEARCH RESPONSE ===");
+        console.log("Full response:", res);
+        console.log("Response data:", res.data);
+        console.log("Response data type:", typeof res.data);
+        console.log("Is array?", Array.isArray(res.data));
+        if (res.data && typeof res.data === 'object') {
+          console.log("Response keys:", Object.keys(res.data));
+        }
+        
+        // Handle different response formats
+        let data = res.data;
+        
+        // If it's already an array, use it
+        if (Array.isArray(data)) {
+          console.log("Data is already an array, length:", data.length);
+        } 
+        // If it's an object, try to find the array
+        else if (data && typeof data === 'object') {
+          console.log("Data is an object, searching for array...");
+          
+          // Try common keys
+          const possibleKeys = ['data', 'listings', 'results', 'items', 'hotels', 'properties'];
+          let found = false;
+          
+          for (const key of possibleKeys) {
+            if (data[key] && Array.isArray(data[key])) {
+              console.log(`Found array in key: ${key}, length: ${data[key].length}`);
+              data = data[key];
+              found = true;
+              break;
+            }
+          }
+          
+          // If no common key found, try to find any array value
+          if (!found) {
+            console.log("No common key found, searching all keys...");
+            for (const key in data) {
+              if (Array.isArray(data[key])) {
+                console.log(`Found array in key: ${key}, length: ${data[key].length}`);
+                data = data[key];
+                found = true;
+                break;
+              }
+            }
+          }
+          
+          if (!found) {
+            console.warn("Could not find array in response, setting empty array");
+            console.log("Full data structure:", JSON.stringify(data, null, 2));
+            data = [];
+          }
+        } else {
+          console.warn("Unexpected data type:", typeof data);
+          data = [];
+        }
+
+        console.log("Final data to process:", data);
+        console.log("Data length:", data.length);
+
+        if (!Array.isArray(data) || data.length === 0) {
+          console.warn("No data to process or data is not an array");
+          this.results = [];
+          this.loading = false;
+          return;
+        }
+
+        this.results = data.map((hotel, index) => {
+          console.log(`Processing hotel ${index}:`, hotel);
+          
+          // Handle pictures array - can be pictures or images
+          let imageUrl = "https://via.placeholder.com/400x250";
+          if (hotel.pictures && Array.isArray(hotel.pictures) && hotel.pictures.length > 0) {
+            // Try to get the best quality image
+            const firstPic = hotel.pictures[0];
+            imageUrl = firstPic.original || firstPic.large || firstPic.regular || firstPic.thumbnail || imageUrl;
+            // Fix protocol if missing
+            if (imageUrl.startsWith('//')) {
+              imageUrl = 'https:' + imageUrl;
+            }
+          } else if (hotel.images && Array.isArray(hotel.images) && hotel.images.length > 0) {
+            imageUrl = hotel.images[0];
+          } else if (hotel.image || hotel.photo_url || hotel.thumbnail_url || hotel.main_image) {
+            imageUrl = hotel.image || hotel.photo_url || hotel.thumbnail_url || hotel.main_image;
+          }
+          
+          return {
+            id: hotel.id || hotel.listing_id || hotel.property_id || `hotel-${index}`,
+            name: hotel.title || hotel.name || hotel.listing_title || hotel.property_name || 'Untitled',
+            location: hotel.location || hotel.city || hotel.address?.city || hotel.address || this.city,
+            city: hotel.city || hotel.address?.city || hotel.address || this.city,
+            rating: hotel.rating || hotel.star_rating || hotel.review_score || hotel.reviews?.rating || hotel.review_rating || '4.86',
+            guests: hotel.max_guests || hotel.guests || hotel.accommodates || hotel.capacity || hotel.max_capacity,
+            bedrooms: hotel.bedrooms || hotel.beds || hotel.bedrooms_count || hotel.room_count || hotel.bedroom_count,
+            bathrooms: hotel.bathrooms || hotel.bathrooms_count || hotel.bathrooms_total || hotel.bath_count || hotel.bathroom_count,
+            image: imageUrl
+          };
+        });
+
+        console.log("=== PROCESSED RESULTS ===");
+        console.log("Results count:", this.results.length);
+        console.log("First result:", this.results[0]);
 
       } catch (err) {
-        console.error(err);
+        console.error("=== SEARCH ERROR ===");
+        console.error("Error:", err);
+        console.error("Error message:", err.message);
+        console.error("Error response:", err.response);
+        console.error("Error response data:", err.response?.data);
+        console.error("Error response status:", err.response?.status);
+        
+        // Show user-friendly error message
+        if (err.response) {
+          // Server responded with error
+          console.error(`Server error: ${err.response.status} - ${err.response.statusText}`);
+          if (err.response.data) {
+            console.error("Error details:", err.response.data);
+          }
+          this.searchError = `Server error: ${err.response.status} - ${err.response.statusText}`;
+        } else if (err.request) {
+          // Request was made but no response received
+          console.error("No response received from server. Is the backend running?");
+          this.searchError = "Cannot connect to server. Please make sure the backend is running on http://127.0.0.1:8000";
+        } else {
+          // Something else happened
+          console.error("Error setting up request:", err.message);
+          this.searchError = `Error: ${err.message}`;
+        }
+        
+        this.results = [];
       }
 
       this.loading = false;
+    },
+    
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   }
 };
@@ -193,7 +369,7 @@ export default {
 
 <style scoped>
 .widget {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 30px;
   background: rgba(255, 255, 255, 0.95);
@@ -320,10 +496,93 @@ export default {
   font-size: 18px;
 }
 
+.results-section {
+  margin-top: 30px;
+}
+
 .results {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 20px;
   margin-top: 30px;
+  padding: 20px;
+}
+
+.page-btn {
+  padding: 10px 20px;
+  background: #0080ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #0066cc;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+  margin-top: 30px;
+}
+
+.error-message {
+  text-align: center;
+  padding: 30px;
+  background: #fee;
+  border: 2px solid #fcc;
+  border-radius: 8px;
+  margin-top: 30px;
+  color: #c33;
+}
+
+.error-message strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.error-hint {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .results {
+    grid-template-columns: 1fr;
+  }
+  
+  .pagination {
+    flex-direction: column;
+    gap: 10px;
+  }
 }
 
 @media (prefers-color-scheme: dark) {

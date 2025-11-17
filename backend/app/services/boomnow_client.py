@@ -22,10 +22,19 @@ class BoomNowClient:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
                 f"{settings.BOOMNOW_BASE_URL}/open_api/v1/listings",
-                headers=headers
+                headers=headers,
+                params={"city": city, "adults": adults} if city or adults else None
             )
             resp.raise_for_status()
-            return resp.json()
+            
+            # Try to parse JSON
+            try:
+                return resp.json()
+            except Exception as e:
+                print(f"Error parsing JSON response: {e}")
+                print(f"Response status: {resp.status_code}")
+                print(f"Response text: {resp.text[:500]}")
+                raise
 
     async def get_cities(self):
         headers = {

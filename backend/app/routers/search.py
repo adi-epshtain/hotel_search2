@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from backend.app.services.boomnow_client import BoomNowClient
 
 router = APIRouter()
@@ -14,7 +14,12 @@ async def search_hotels(
     Search hotels via BoomNow.
     Returns raw JSON from BoomNow API.
     """
-    return await client.search_hotels(city, adults)
+    try:
+        result = await client.search_hotels(city, adults)
+        return result
+    except Exception as e:
+        print(f"Error in search_hotels: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching hotels: {str(e)}")
 
 
 @router.get("/cities")
