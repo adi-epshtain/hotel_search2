@@ -4,24 +4,11 @@ Full-stack demo for searching BoomNow hotels. FastAPI backend proxies BoomNow AP
 
 ---
 
-### 📁 Project Layout
-- `backend/` FastAPI app (`main.py`) with routers under `app/`
-- `frontend/` Vue SPA (Options API) in `src/`
-- `venv/` local Python virtualenv (optional, you can create your own)
-
----
-
 ### 🚀 Backend Setup
 1. `cd backend`
 2. Create virtualenv (optional): `python -m venv .venv && .\.venv\Scripts\activate`
 3. Install deps: `pip install -r requirements.txt`
-4. Create `.env` next to `requirements.txt`:
-   ```
-   BOOMNOW_BASE_URL=https://api.boomnow.com
-   BOOMNOW_CLIENT_ID=xxx
-   BOOMNOW_CLIENT_SECRET=yyy
-   ```
-5. Run: `uvicorn backend.main:app --reload`
+4. Run main app
 
 ---
 
@@ -29,7 +16,7 @@ Full-stack demo for searching BoomNow hotels. FastAPI backend proxies BoomNow AP
 1. `cd frontend`
 2. Install deps: `npm install`
 3. Dev server: `npm run dev`
-4. Configure proxy (e.g., Vite) so `/api` targets `http://127.0.0.1:8000`
+4. Open `http://localhost:5173/`
 
 ---
 

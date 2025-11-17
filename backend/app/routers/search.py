@@ -15,3 +15,8 @@ async def search_hotels(
     Returns raw JSON from BoomNow API.
     """
     return await client.search_hotels(city, adults)
+
+
+@router.get("/cities")
+async def list_cities():
+    return await client.get_cities()

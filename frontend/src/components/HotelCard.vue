@@ -1,14 +1,11 @@
 <template>
   <div class="hotel-card">
-    <img :src="hotel.image" alt="image" class="hotel-img" />
+    <img :src="hotel.image" class="hotel-img" />
 
     <div class="details">
       <h3>{{ hotel.name }}</h3>
-      <p>{{ hotel.city }}</p>
-
-      <div class="price-box">
-        <span class="price">${{ hotel.price }}</span>
-      </div>
+      <p class="city">{{ hotel.city }}</p>
+      <p class="price">$ {{ hotel.price }}</p>
     </div>
   </div>
 </template>
@@ -17,33 +14,39 @@
 export default {
   name: "HotelCard",
   props: {
-    hotel: { type: Object, required: true }
+    hotel: Object
   }
 };
 </script>
 
 <style scoped>
 .hotel-card {
-  display: flex;
-  flex-direction: column;
+  width: 100%;
   border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  margin-bottom: 20px;
   background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  overflow: hidden;
+  margin-bottom: 20px;
 }
+
 .hotel-img {
   width: 100%;
   height: 180px;
   object-fit: cover;
 }
+
 .details {
   padding: 12px;
 }
-.price-box {
-  margin-top: 8px;
-  font-size: 18px;
+
+.city {
+  font-size: 14px;
+  color: #666;
+}
+
+.price {
   font-weight: bold;
   color: #0080ff;
+  margin-top: 5px;
 }
 </style>

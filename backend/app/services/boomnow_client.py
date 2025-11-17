@@ -26,3 +26,17 @@ class BoomNowClient:
             )
             resp.raise_for_status()
             return resp.json()
+
+    async def get_cities(self):
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {settings.BOOMNOW_API_TOKEN}"
+        }
+
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"{settings.BOOMNOW_BASE_URL}/open_api/v1/listings/cities",
+                headers=headers
+            )
+            resp.raise_for_status()
+            return resp.json()

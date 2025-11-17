@@ -4,5 +4,7 @@
 
 <script>
 import SearchWidget from "./components/SearchWidget.vue";
-export default { components: { SearchWidget } };
+export default {
+  components: { SearchWidget }
+};
 </script>
